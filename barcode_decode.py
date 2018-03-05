@@ -32,8 +32,50 @@ Using guard bits and center bits: determine block size
 Scan left and right from centre by using "pre-determined steps" or blocking pixel
 
 """
-img = cv2.imread('zoomed_in_barcode.png')
-cv2.imshow("barcode", img)
+img = cv2.imread('bottle_barcode.jpg')
+img = cv2.resize(img, (350, 350))
+grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+#x gradient and y gradient
+#barcodes have high horizontal image gradient low vertical image gradient
+#image gradient: derivative of intensity of pixel: grey level value
+#of pixel with respect to x or y coordinate.
+
+
+"""
+In order to identify areas with high horizontal gradient and low vertical
+gradient, subtract y gradient from x gradient.
+Scharr filter: high pass filter
+"""
+
+#3x3 scharr filter gives better results than 3x3 sobel filter
+#hence ksize = -1
+gradX = cv2.Sobel(grayscale, cv2.CV_64F,1,0,ksize=-1)
+gradY = cv2.Sobel(grayscale, cv2.CV_64F,0,1, ksize=-1)
+subtract = cv2.subtract(gradX, gradY)
+subtract = cv2.convertScaleAbs(subtract)
+
+laplacian = cv2.Laplacian(img, cv2.CV_32F)
+
+#blur: smoothening high frequency noise
+
+blur = cv2.GaussianBlur(subtract, (9, 9), 0)
+
+#thresholding: anything that has a intensity greater than 225
+#is converted to 0.
+#
+(_, thresh) = cv2.threshold(blur, 225, 255,cv2.THRESH_BINARY)
+cv2.imshow("xresized_image", grayscale)
+cv2.imshow("subtraction", subtract)
+cv2.imshow("blur", blur)
+cv2.imshow("thresres",thresh)
+
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+
+#-----------------------------------------------------
 max_row, max_col = img.shape[:2]
 scanline_row = int(max_row/2)
 binarized_scanline_row = []
@@ -50,6 +92,3 @@ print(white_bg)
 print(binarized_scanline_row)
 
 
-
-#cv2.waitKey(0)
-#cv2.destroyAllWindows()
