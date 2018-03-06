@@ -65,11 +65,32 @@ blur = cv2.GaussianBlur(subtract, (9, 9), 0)
 #is converted to 0.
 #
 (_, thresh) = cv2.threshold(blur, 225, 255,cv2.THRESH_BINARY)
+
+#Remove vertical gaps between the strips
+#Dilation followed by erosion
+kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 7))
+closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+#Erosion: removes white regions in image
+#Dilation: increases white regions in image
+closed = cv2.erode(closed, kernel, iterations = 4)
+closed = cv2.dilate(closed, kernel, iterations = 5)
+#Find contours
+(_, cnts, _) = cv2.findContours(closed.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+c = sorted(cnts, key = cv2.contourArea, reverse = True)[0]
+rect = cv2.minAreaRect(c)
+box = np.int0(cv2.boxPoints(rect))
+
+# draw a bounding box arounded the detected barcode and display the
+# image
+cv2.drawContours(img, [box], -1, (0, 255, 0), 3)
+"""
 cv2.imshow("xresized_image", grayscale)
 cv2.imshow("subtraction", subtract)
 cv2.imshow("blur", blur)
 cv2.imshow("thresres",thresh)
+"""
 
+cv2.imshow("closed", img)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()
