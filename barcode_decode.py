@@ -32,67 +32,73 @@ Using guard bits and center bits: determine block size
 Scan left and right from centre by using "pre-determined steps" or blocking pixel
 
 """
-img = cv2.imread('bottle_barcode.jpg')
-img = cv2.resize(img, (350, 350))
-grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-#x gradient and y gradient
-#barcodes have high horizontal image gradient low vertical image gradient
-#image gradient: derivative of intensity of pixel: grey level value
-#of pixel with respect to x or y coordinate.
+def detect(img):
+    img = cv2.resize(img, (350, 350))
+    grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    #x gradient and y gradient
+    #barcodes have high horizontal image gradient low vertical image gradient
+    #image gradient: derivative of intensity of pixel: grey level value
+    #of pixel with respect to x or y coordinate.
 
 
-"""
-In order to identify areas with high horizontal gradient and low vertical
-gradient, subtract y gradient from x gradient.
-Scharr filter: high pass filter
-"""
+    """
+    In order to identify areas with high horizontal gradient and low vertical
+    gradient, subtract y gradient from x gradient.
+    Scharr filter: high pass filter
+    """
 
-#3x3 scharr filter gives better results than 3x3 sobel filter
-#hence ksize = -1
-gradX = cv2.Sobel(grayscale, cv2.CV_64F,1,0,ksize=-1)
-gradY = cv2.Sobel(grayscale, cv2.CV_64F,0,1, ksize=-1)
-subtract = cv2.subtract(gradX, gradY)
-subtract = cv2.convertScaleAbs(subtract)
+    #3x3 scharr filter gives better results than 3x3 sobel filter
+    #hence ksize = -1
+    gradX = cv2.Sobel(grayscale, cv2.CV_64F,1,0,ksize=-1)
+    gradY = cv2.Sobel(grayscale, cv2.CV_64F,0,1, ksize=-1)
+    subtract = cv2.subtract(gradX, gradY)
+    subtract = cv2.convertScaleAbs(subtract)
 
-laplacian = cv2.Laplacian(img, cv2.CV_32F)
+    laplacian = cv2.Laplacian(img, cv2.CV_32F)
 
-#blur: smoothening high frequency noise
+    #blur: smoothening high frequency noise
 
-blur = cv2.GaussianBlur(subtract, (9, 9), 0)
+    blur = cv2.GaussianBlur(subtract, (9, 9), 0)
 
-#thresholding: anything that has a intensity greater than 225
-#is converted to 0.
-#
-(_, thresh) = cv2.threshold(blur, 225, 255,cv2.THRESH_BINARY)
+    #thresholding: anything that has a intensity greater than 225
+    #is converted to 0.
+    #
+    (_, thresh) = cv2.threshold(blur, 225, 255,cv2.THRESH_BINARY)
 
-#Remove vertical gaps between the strips
-#Dilation followed by erosion
-kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 7))
-closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-#Erosion: removes white regions in image
-#Dilation: increases white regions in image
-closed = cv2.erode(closed, kernel, iterations = 4)
-closed = cv2.dilate(closed, kernel, iterations = 5)
-#Find contours
-(_, cnts, _) = cv2.findContours(closed.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-c = sorted(cnts, key = cv2.contourArea, reverse = True)[0]
-rect = cv2.minAreaRect(c)
-box = np.int0(cv2.boxPoints(rect))
+    #Remove vertical gaps between the strips
+    #Dilation followed by erosion
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (21, 7))
+    closed = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    #Erosion: removes white regions in image
+    #Dilation: increases white regions in image
+    closed = cv2.erode(closed, kernel, iterations = 4)
+    closed = cv2.dilate(closed, kernel, iterations = 6)
+    #Find contours
+    (_, cnts, _) = cv2.findContours(closed.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if len(cnts) == 0:
+        return None
+    c = sorted(cnts, key = cv2.contourArea, reverse = True)[0]
+    rect = cv2.minAreaRect(c)
+    box = np.int0(cv2.boxPoints(rect))
+    return box
 
-# draw a bounding box arounded the detected barcode and display the
-# image
-cv2.drawContours(img, [box], -1, (0, 255, 0), 3)
-"""
-cv2.imshow("xresized_image", grayscale)
-cv2.imshow("subtraction", subtract)
-cv2.imshow("blur", blur)
-cv2.imshow("thresres",thresh)
-"""
+    # draw a bounding box arounded the detected barcode and display the
+    # image
 
-cv2.imshow("closed", img)
-
-cv2.waitKey(0)
+camera = cv2.VideoCapture(0)
+while True:
+    (returned, frame) = camera.read()
+    if returned:
+        box = detect(frame)
+        print(box)
+        cv2.drawContours(frame, [box], -1, (0, 255, 0), 2)
+        cv2.imshow("closed", frame)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("q"):
+            break
+camera.release()
 cv2.destroyAllWindows()
 
 
