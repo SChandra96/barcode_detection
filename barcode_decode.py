@@ -34,7 +34,6 @@ Scan left and right from centre by using "pre-determined steps" or blocking pixe
 """
 
 def detect(img):
-    img = cv2.resize(img, (350, 350))
     grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     #x gradient and y gradient
@@ -90,32 +89,15 @@ def detect(img):
 camera = cv2.VideoCapture(0)
 while True:
     (returned, frame) = camera.read()
-    if returned:
-        box = detect(frame)
+    frame = cv2.resize(frame, (350, 350))
+    box = detect(frame)
+    if box is None or not returned:
+        pass
+    else:
         print(box)
         cv2.drawContours(frame, [box], -1, (0, 255, 0), 2)
-        cv2.imshow("closed", frame)
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord("q"):
-            break
+        cv2.imshow("frame", frame)
+    if (cv2.waitKey(1) == ord('q')):
+        break
 camera.release()
 cv2.destroyAllWindows()
-
-
-#-----------------------------------------------------
-max_row, max_col = img.shape[:2]
-scanline_row = int(max_row/2)
-binarized_scanline_row = []
-white_bg = 0
-for col in range(max_col):
-        r, g, b = img[scanline_row, col]
-        luminosity = 0.299*r + (0.587*g) + (0.144*b)
-        if luminosity < 50:
-            binarized_scanline_row.append(1)
-        else:
-            binarized_scanline_row.append(0)
-            white_bg += 1
-print(white_bg)
-print(binarized_scanline_row)
-
-
