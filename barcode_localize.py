@@ -1,5 +1,9 @@
 import cv2
 import numpy as np
+import pyzbar.pyzbar as pyzbar
+import math
+
+
 
 """
 Luminance 0: Black color
@@ -32,6 +36,17 @@ Using guard bits and center bits: determine block size
 Scan left and right from centre by using "pre-determined steps" or blocking pixel
 
 """
+def decode(img):
+    decodedObjects = pyzbar.decode(img)
+    print(decodedObjects)
+    for obj in decodedObjects:
+        print('Type : ', obj.type)
+        print('Data : ', obj.data, '\n')
+    return decodedObjects
+
+
+
+
 
 def detect(img):
     grayscale = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -92,14 +107,17 @@ while True:
     if not returned:
         break
     frame = cv2.resize(frame, (350, 350))
-    box = detect(frame)
+    box = decode(frame)
+    """
     if box is None:
         pass
     else:
         print(box)
         cv2.drawContours(frame, [box], -1, (0, 255, 0), 2)
+    """
     cv2.imshow("frame", frame)
     if (cv2.waitKey(1) == ord('q')):
         break
+
 camera.release()
 cv2.destroyAllWindows()
