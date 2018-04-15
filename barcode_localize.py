@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import pyzbar.pyzbar as pyzbar
+import requests
+
 import math
 
 
@@ -30,7 +32,7 @@ Design Choice (2): Determine luminosity range for white and black
 
 (3)
 Identify centre and guard bits of barcode
-Using guard bits and center bits: determine block size
+Using guaqrd bits and center bits: determine block size
 
 (4)
 Scan left and right from centre by using "pre-determined steps" or blocking pixel
@@ -39,10 +41,12 @@ Scan left and right from centre by using "pre-determined steps" or blocking pixe
 def decode(img):
     decodedObjects = pyzbar.decode(img)
     print(decodedObjects)
+    detected_barcodes = []
     for obj in decodedObjects:
         print('Type : ', obj.type)
-        print('Data : ', obj.data, '\n')
-    return decodedObjects
+        print('Data : ', str(obj.data, 'utf-8'), '\n')
+        detected_barcodes.append(str(obj.data, 'utf-8'))
+    return detected_barcodes
 
 
 
@@ -101,23 +105,29 @@ def detect(img):
     # draw a bounding box arounded the detected barcode and display the
     # image
 
-camera = cv2.VideoCapture(0)
-while True:
+#camera = cv2.VideoCapture(0)
+"""while True:
     (returned, frame) = camera.read()
     if not returned:
         break
     frame = cv2.resize(frame, (350, 350))
     box = decode(frame)
-    """
-    if box is None:
-        pass
-    else:
-        print(box)
-        cv2.drawContours(frame, [box], -1, (0, 255, 0), 2)
-    """
+    #if box is None:
+     #   pass
+    #else:
+     #   print(box)
+      #  cv2.drawContours(frame, [box], -1, (0, 255, 0), 2)
     cv2.imshow("frame", frame)
     if (cv2.waitKey(1) == ord('q')):
         break
-
-camera.release()
-cv2.destroyAllWindows()
+"""
+img = cv2.imread('chocolate.png')
+img = cv2.resize(img, (350, 350))
+detected_barcodes = decode(img)
+print(detected_barcodes)
+for barcode in detected_barcodes:
+    url = "http://localhost:8000/smartfridge/receive_barcode/" + barcode[1:]
+    response = requests.get(url)
+    print(response.status_code)
+#camera.release()
+#Acv2.destroyAllWindows()
